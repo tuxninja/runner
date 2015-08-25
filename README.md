@@ -17,6 +17,10 @@ An extremely useful multi-threaded SSH command runner with sudo support written 
 	RUNNER [INFO]: SUDO IS ON
 	RUNNER [INPUT]: Please Enter Site Pass: 
 
+###### Hosts file
+- The current version requires that you load your hosts into a file, one host per line under ~/.runner/hosts/hosts-all 
+- You can also add custom host files here and used -f to use a custom hosts file with Runner. 
+
 
 ###### sconnect
 Is a binary that gets used by runner if you need to tunnel through a bastion or jump box. 

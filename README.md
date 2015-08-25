@@ -5,7 +5,7 @@ An extremely useful multi-threaded SSH command runner with sudo support written 
 - Use prunner.py for a proxy version, that utilizes an existing tunnel (on port 8081) and sconnect. 
 
 ###### Usage
-➜  runner git:(master) ✗ runner -r web -c 'id' -T 40 -p 10 -s
+	➜  runner git:(master) ✗ runner -r web -c 'id' -T 40 -p 10 -s
 	RUNNER [INFO]: MATCHING HOSTNAMES WITH 'web'
 	RUNNER [INFO]: 19565 HOSTS HAVE BEEN SELECTED
 	RUNNER [INFO]: LOGFILE SET - /Users/jriedel/.runner/logs/runner.log.2015-08-25.00:43:21

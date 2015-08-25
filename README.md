@@ -1,5 +1,5 @@
 ###Runner
-        An extremely useful multi-threaded SSH command runner with sudo support written in Python. 
+An extremely useful multi-threaded SSH command runner with sudo support written in Python. 
 
 ###### runner.py
         Multi-threaded SSH command runner with sudo support

@@ -1,0 +1,281 @@
+#!/usr/bin/env python
+# runner.py connects directly to hosts without using a proxy (see prunner for how to connect through jump boxes).
+
+import paramiko
+import getpass
+import Queue
+import threading
+import argparse
+import os.path
+import time
+import logging
+import re
+import datetime
+from os.path import expanduser
+import itertools
+import sys
+
+
+# # SETUP AVAILABLE ARGUMENTS ##
+parser = argparse.ArgumentParser()
+parser.add_argument('-c', action="store", dest="command_string", required=False, help="Command to run")
+parser.add_argument('-cf', action="store", dest="command_file", required=False,
+                    help="Specify a file full of commands to run on selected machine(s)")
+parser.add_argument('-e', action="store_true", dest="echo_cmd", required=False,
+                    help="echo's the command ran before the result output")
+parser.add_argument('-f', action="store", dest="file_path", required=False,
+                    help="Specify your own path to a hosts file")
+parser.add_argument('-l', action="store_true", dest="list_only", required=False, help="List all known hosts")
+parser.add_argument('-p', action="store", dest="percentage", required=False,
+                    help="Percentage of hosts to run on at a time.")
+parser.add_argument('-q', action="store_true", dest="quiet_mode", required=False,
+                    help="Quiet mode: turns off RUNNER INFO messages.")
+parser.add_argument('-qq', action="store_true", dest="super_quiet_mode", required=False,
+                    help="Super Quiet mode: turns off ALL RUNNER messages except [INPUT].")
+parser.add_argument('-r', action="store", dest="host_match", required=False,
+                    help="Select Hosts matching supplied pattern")
+parser.add_argument('-s', action="store_true", dest="sudo", required=False,
+                    help="Run command inside root shell using sudo")
+parser.add_argument('-t', action="store", dest="connect_timeout", required=False,
+                    help="ssh timeout to hosts in seconds")
+parser.add_argument('-T', action="store", dest="threads", required=False, help="# of threads to run (don't get crazy)")
+parser.add_argument('-u', action="store", dest="site_user", required=False,
+                    help="Specify a username (by default I use who you are logged in as)")
+parser.add_argument('-1', action="store_true", dest="host_per_pool", required=False, help="One host per pool")
+args = parser.parse_args()
+
+##GLOBAL##
+logging.getLogger('paramiko.transport').addHandler(logging.NullHandler())
+#logging.basicConfig(level=logging.DEBUG)
+
+## SET HOME DIR ##
+home_dir = expanduser("~")
+
+## SET TIMEOUT ##
+connect_timeout = 10
+if args.connect_timeout:
+    connect_timeout = args.connect_timeout
+
+## SET THREADS / WORKERS ##
+workers = 20
+if args.threads:
+    workers = int(args.threads)
+
+## SET PERCENTAGE ##
+if args.percentage:
+    percentage = int(args.percentage)
+
+## SET USER / PASS ##
+site_user = getpass.getuser()
+if args.site_user:
+    site_user = args.site_user
+
+failed_logins = []
+successful_logins = []
+
+
+## SETUP LOG FILE ##
+if not args.list_only:  ## don't create a log if just listing hosts.
+    tstamp = datetime.datetime.now().strftime("%Y-%m-%d.%H:%M:%S")
+    logfile_dir = "%s/.runner/logs" % (home_dir)
+    if not os.path.exists(logfile_dir):
+        os.makedirs(logfile_dir)
+    logfile_path = '%s/runner.log.%s' % (logfile_dir, tstamp)
+    logfile = open(logfile_path, 'w')
+
+## END GLOBAL ##
+
+def run_cmds(ssh, cmd, hostname, site_passwd):
+    if args.sudo:
+        sudocmd = 'sudo ' + cmd
+        (stdin, stdout, stderr) = ssh.exec_command(sudocmd, get_pty=True)
+        time.sleep(.10)  ## terrible way to alleviate this bug.
+        stdin.write(site_passwd + '\n')
+        stdin.flush()
+    else:
+        (stdin, stdout, stderr) = ssh.exec_command(cmd)
+
+    ## stdout
+    if args.echo_cmd:
+        log_and_print("%s: %s" % (hostname, cmd))
+    for line in stdout.readlines():
+        line = line.rstrip()
+        if "We trust you have received the usual lecture from the local System" in line or "Administrator. It usually boils down to these three things:" in line or "#1) Respect the privacy of others." in line or "#2) Think before you type." in line or "#3) With great power comes great responsibility." in line:
+            break
+        else:
+            if line and "[sudo] password" not in line and site_passwd not in line:
+                log_and_print("%s: %s" % (hostname, line))
+
+    ## stderr
+    for line in stderr.readlines():
+        line = line.rstrip()
+        log_and_print("%s: %s" % (hostname, line))
+
+
+def ssh_to_host(hosts, site_passwd):
+    for i in range(workers):
+        t = threading.Thread(target=worker, args=(site_user, site_passwd))
+        t.daemon = True
+        t.start()
+
+    for hostname in hosts:
+        if hostname is not None:
+            hostname = hostname.rstrip()
+            q.put(hostname)
+
+    q.join()
+
+
+def worker(site_user, site_passwd):
+    while True:
+        hostname = q.get()
+        node_shell(hostname, site_user, site_passwd)
+        q.task_done()
+
+
+def node_shell(hostname, site_user, site_passwd):
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    try:
+        ssh.connect(hostname, username=site_user, password=site_passwd, timeout=connect_timeout)
+        transport = ssh.get_transport()
+        transport.set_keepalive(0)
+
+        cmd = args.command_string
+
+        if args.command_file:
+            try:
+                cmds = open(args.command_file)
+                for cmd in cmds:
+                    cmd = cmd.strip()
+                    run_cmds(ssh, cmd, hostname, site_passwd)
+            except Exception as e:
+                print "Command File Error: %s" % (e)
+        else:
+            run_cmds(ssh, cmd, hostname, site_passwd)
+
+        successful_logins.append(hostname)
+        ssh.close()
+
+    except Exception as e:
+        log_and_print("%s: failed to login : %s" % (hostname, e))
+        failed_logins.append(hostname)
+        ssh.close()
+
+
+def log_and_print(message):
+    if args.super_quiet_mode or args.list_only:
+        if "RUNNER [INPUT]" in message or "RUNNER [ERROR]" in message or "RUNNER" not in message:
+            #print message
+            sys.stdout.write(message + '\n')
+            logfile.write(message + '\n')
+    elif args.quiet_mode or args.list_only:
+        if "RUNNER [INFO]" not in message:
+            #print message
+            sys.stdout.write(message + '\n')
+            logfile.write(message + '\n')
+    else:
+        #print message
+        sys.stdout.write(message + '\n')
+        if not args.list_only:
+            logfile.write(message + '\n')
+
+
+def get_hosts(file_path):
+    ## Expands ~ to users home directory.
+    ex_file_path = expanduser(file_path)
+    if os.path.exists(ex_file_path):
+        hosts = open(ex_file_path)
+        selected_hosts = []
+        if not args.host_match:
+            selected_hosts = list(hosts)
+            log_and_print("RUNNER [INFO]: SELECTING ALL HOSTS")
+        else:
+            host_match = args.host_match
+            for host in hosts:
+                if re.search(host_match, host):
+                    selected_hosts.append(host)
+            log_and_print("RUNNER [INFO]: MATCHING HOSTNAMES WITH '%s'" % (host_match))
+    else:
+        log_and_print("RUNNER [ERROR]: %s does not exist ! Try running ./update-runner-hosts" % (file_path))
+        exit()
+
+    ## Select one host per pool
+    if args.host_per_pool:
+        seen = {}
+        host_per_pool = []
+        for host in selected_hosts:
+            #nhost = re.sub("[\d+]?-?\d+[a|b]?\.", ".", host) matches phxblah01-3001, phxblah02-3002
+            nhost = re.sub("\d+[a|b]?\.", ".", host)
+            if not nhost in seen:
+                seen[nhost] = 1
+                host_per_pool.append(host)
+        selected_hosts = host_per_pool
+
+    log_and_print("RUNNER [INFO]: %s HOSTS HAVE BEEN SELECTED" % (len(selected_hosts)))
+    return selected_hosts
+
+
+if __name__ == "__main__":
+    file_path = "%s/.runner/hosts/hosts-all" % (home_dir)  ## update-hosts-all creates the DIR
+
+    ## updates filepath if -f is specified.
+    if args.file_path:
+        file_path = args.file_path
+
+    if args.list_only or args.command_string or args.command_file:
+        selected_hosts = get_hosts(file_path)
+        if args.list_only:
+            for host in selected_hosts:
+                host = host.rstrip()
+                print host
+            if len(selected_hosts) == 1:
+                print "\nThere was %s host listed." % (len(selected_hosts))
+            else:
+                print "\nThere were %s hosts listed." % (len(selected_hosts))
+            exit()
+
+        else:
+            log_and_print("RUNNER [INFO]: LOGFILE SET - %s" % (logfile_path))
+            log_and_print("RUNNER [INFO]: USER SET - %s" % (site_user))
+            log_and_print("RUNNER [INFO]: SSH CONNECT TIMEOUT is: %s seconds" % (connect_timeout))
+            log_and_print("RUNNER [INFO]: THREADS SET - %s" % (workers))
+            if args.percentage:
+                ## Magic that divides a list into new lists aka chunks based on percentage.
+                chunks = list(itertools.izip_longest(*[iter(selected_hosts)] * percentage))
+                log_and_print("RUNNER [INFO]: PERCENTAGE SET - %s" % (percentage))
+                log_and_print("RUNNER [INFO]: HOSTS ARE BEING DIVIDED INTO %s CHUNKS" % (len(chunks)))
+            if args.sudo:
+                log_and_print("RUNNER [INFO]: SUDO IS ON")
+
+            site_passwd = getpass.getpass("RUNNER [INPUT]: Please Enter Site Pass: ")
+
+            ## start timer ##
+            stime = time.time()
+
+            q = Queue.Queue()
+
+            if args.percentage:
+                for host_chunk in chunks:
+                    ssh_to_host(host_chunk, site_passwd)
+            else:
+                ssh_to_host(selected_hosts, site_passwd)
+
+
+            ## end timer ##
+            etime = time.time()
+            run_time = int(etime - stime)
+
+            timestamp = str(datetime.timedelta(seconds=run_time))
+            log_and_print(
+                "\nRUNNER [RESULT]: Successfully logged into %s/%s hosts and ran your command(s) in %s second(s)" % (
+                    len(successful_logins), len(selected_hosts), timestamp))
+            log_and_print("RUNNER [RESULT]: There were %s login failures.\n" % (len(failed_logins)))
+            if len(failed_logins) > 0:
+                for failed_host in failed_logins:
+                    log_and_print("RUNNER [RESULT]: Failed to login to: %s" % (failed_host))
+            log_and_print("\nRUNNER [INFO]: Your logfile can be viewed @ %s" % (logfile_path))
+    else:
+        parser.print_help()
+        output = "\nRUNNER [INFO]: Either -l (list hosts only) or -c (Run command string) is required.\n"
+        print output

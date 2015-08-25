@@ -1,8 +1,8 @@
 ###Runner
 An extremely useful multi-threaded SSH command runner with sudo support written in Python. I use this for my daily DevOps adventures to manage hosts and even load balancers. Make sure to add runner to your path and turn on execute permissions. 
 
-- Use runner.py for a non-proxy version. 
-- Use prunner.py for a proxy version, that utilizes an existing tunnel (on port 8081) and sconnect. 
+- Use scripts/runner.py for a non-proxy version. 
+- Use scripts/prunner.py for a proxy version, that utilizes an existing tunnel (on port 8081) and sconnect. 
 
 ###### Usage
 	➜  runner git:(master) ✗ runner -r web -c 'id' -T 40 -p 10 -s

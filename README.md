@@ -55,6 +55,11 @@ Runner is a simple command line SSH utility that has the following features & ca
     
     ERROR - Either -l (list hosts only) or -c (Run command) or -cf (Run command file) is required.
     ➜  ~  
+    
+#### Installation
+git clone https://github.com/tuxninja/runner.git
+
+Coming soon 
 
 #### Example Non-Sudo Usage
     ➜  bin git:(master) ✗ runner -c 'id' -r tux -c 'id' -log

@@ -1,5 +1,5 @@
 #!/usr/local/bin/python2.7
-__author__ = 'Jason Riedel (tuxninja)'
+__author__ = 'jriedel'
 __description__ = 'Command line utility for quickly managing devices through SSH with some super cool & handy features.'
 __version__ = '2.0'
 
@@ -426,7 +426,10 @@ if __name__ == "__main__":
 
                 timestamp = str(datetime.timedelta(seconds=run_time))
                 print ""
-                logger.info('[SUMMARY] - Successfully logged into %s/%s hosts and ran your command(s) in %s second(s)\n' % (len(successful_logins), len(selected_hosts), timestamp))
+                summary = 'Successfully logged into %s/%s hosts and ran your command(s) in %s second(s)\n' % ((len(successful_logins)), len(selected_hosts), timestamp)
+                if len(successful_logins) == 0:
+                    summary = 'Failed to login on all %s hosts.' % (len(selected_hosts))
+                logger.info('[SUMMARY] - %s' % (summary))
                 if len(failed_logins) > 0:
                     for failed_host in failed_logins:
                         logger.info('[FAILED] - to login to: %s' % (failed_host))

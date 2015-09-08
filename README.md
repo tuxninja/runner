@@ -88,7 +88,7 @@ Real instructions coming soon, for now...
     INFO - [LOG] - Your logfile can be viewed @ /Users/jriedel/.runner/logs/runner.log.2015-09-07.13:46:53
     ➜  bin git:(master) ✗ 
     
-    ###### Example Sudo Usage + Output Filtering
+###### Example Sudo Usage + Output Filtering
     
     ➜  bin git:(master) ✗ runner -c 'id' -r tux -c 'id' -log -s -lf RESULT,SUMMARY
     Please Enter Site Pass: 

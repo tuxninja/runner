@@ -16,6 +16,7 @@ Runner is a simple command line SSH utility that has the following features & ca
     * (roadmap: templating for advanced automation) 
 * Seemless setup for proxying through a jump host (starttunnel, and then runner -p <port>)
 * Encryption for safely remembering your password. (storePass.py, Runner finds it automatically) 
+* Runner has been tested on Ubuntu, Redhat, Solaris, F5 Bigip's and Cisco IOS. 
 
 #### Usage
     ➜  ~  runner
@@ -57,9 +58,12 @@ Runner is a simple command line SSH utility that has the following features & ca
     ➜  ~  
     
 #### Installation
-git clone https://github.com/tuxninja/runner.git
 
-Coming soon 
+Real instructions coming soon, for now... 
+
+* git clone https://github.com/tuxninja/runner.git
+* Install dependencies
+* Copy bin/* to /usr/local/bin or add it to your PATH.
 
 #### Example Non-Sudo Usage
     ➜  bin git:(master) ✗ runner -c 'id' -r tux -c 'id' -log

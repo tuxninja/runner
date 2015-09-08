@@ -1,6 +1,15 @@
 ###Runner
-Like Ansible, Runner is a simple utility that provides a command line interface for Multi-threaded SSH commands to run. It supports Sudo, Proxying through a jump host, and can remember your login credentials securely. In addition to running raw commands, command files are the basic building blocks for automation. Currently, you must list commands one by one in a command file, but in the future we will provide a rich templating language for these tasks.
- Runner has been tested with multiple flavors of Linux & Unix machines as well as F5 load balancers. However, it has not been tested on Cisco hardware or other networking gear yet. 
+Runner is a simple command line utility with these features: 
+* Provides multi-threaded SSH capabilities (-t) 
+* Allows for custom hosts files (-hf)
+* Accepts regular expressions for filtering host selections. (-r '^example') 
+* Provides regex for 1 host per pool, regex may need modification for your hostname convention (-1) 
+* Can break apart hosts into chunks(groups) to be threaded (-d), (-d 0 = Turbo Mode)  
+* Works with Sudo (-s) 
+* Gives you full control over logging & output filtering. (-log, -ll, -pl) 
+* Can run multiple commands using custom command files. (-cf)  (roadmap: templating for advanced automation) 
+* Seemless setup for proxying through a jump host (starttunnel, and then runner -p <port>)
+* Encryption for safely remembering your password. (storePass.py, Runner finds it automatically) 
 
 #### Usage
     ➜  ~  runner

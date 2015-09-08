@@ -3,7 +3,8 @@ Runner is a simple command line utility with these features:
 * Provides multi-threaded SSH capabilities (-t) 
 * Allows for custom hosts files (-hf)
 * Accepts regular expressions for filtering host selections. (-r '^example') 
-* Provides regex for 1 host per pool, regex may need modification for your hostname convention (-1) 
+* Provides regex for 1 host per pool (-1) 
+    * Note: Regular Expression may need modification for your hostname convention
 * Can break apart hosts into chunks(groups) to be threaded (-d), (-d 0 = Turbo Mode)  
 * Works with Sudo (-s) 
 * Gives you full control over logging & output filtering. (-log, -ll, -pl) 

@@ -2,7 +2,6 @@
 
 Runner is a simple, multi-threaded command line SSH utility for quick ad-hoc administration tasks and automation.  
 
----
 #### Features & Capabilities
 
 * Provides tunable multi-threaded SSH capabilities (-t) 

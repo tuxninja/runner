@@ -1,8 +1,10 @@
 ###Runner
 
-Runner is a simple command line SSH utility that has the following features & capabilites:  
+Runner is a simple, multi-threaded command line SSH utility for quick ad-hoc administration tasks and automation.  
 
 ---
+#### Features & Capabilities
+
 * Provides tunable multi-threaded SSH capabilities (-t) 
 * Allows for custom hosts files (-hf)
 * Accepts regular expressions for filtering host selections. (-r '^example') 
@@ -19,6 +21,7 @@ Runner is a simple command line SSH utility that has the following features & ca
 * Runner has been tested on Ubuntu, Redhat, Solaris, F5 Bigip's and Cisco IOS. 
 
 #### Usage
+
     ➜  ~  runner
     
     usage: runner [-h] [-c COMMANDSTRING] [-cf COMMANDFILE] [-ct CONNECTTIMEOUT]
@@ -66,6 +69,7 @@ Real instructions coming soon, for now...
 * Copy bin/* to /usr/local/bin or add it to your PATH.
 
 #### Example Non-Sudo Usage
+
     ➜  bin git:(master) ✗ runner -c 'id' -r tux -c 'id' -log
     INFO - [PARAM SET] - FILTERING ONLY HOSTNAMES MATCHING "tux"
     INFO - [PARAM SET] - 1 HOSTS HAVE BEEN SELECTED
@@ -97,9 +101,11 @@ Real instructions coming soon, for now...
     ➜  bin git:(master) ✗ 
 
 #### Key File (Requires manual creation for encryption) 
+
 A key file is required for storing your password encrypted to disk. Create a file under ~/.runner/.key with a 16,24, or 32 byte character string only.
 
 #### Store Password 
+
     ➜  scripts git:(master) ✗ storePass.py
     Please Enter Site Pass: 
     INFO:root:Your password has been encrypted & stored for use with Runner.
@@ -107,6 +113,7 @@ A key file is required for storing your password encrypted to disk. Create a fil
 
 
 ##### Now We Can Run A 'Command File' with stored password 
+
     ➜  bin git:(master) ✗ runner -r tux -cf commands -log 
     INFO - [PARAM SET] - FILTERING ONLY HOSTNAMES MATCHING "tux"
     INFO - [PARAM SET] - 1 HOSTS HAVE BEEN SELECTED
@@ -126,5 +133,6 @@ A key file is required for storing your password encrypted to disk. Create a fil
     ➜  bin git:(master) ✗ 
 
 #### Required Hosts File & Custom Host Files
+
 - Runner currently requires that you load your hosts into a file, one host per line under ~/.runner/hosts/hosts-all 
 - You may create as many host files as you like and use -hf to supply a custom hosts file

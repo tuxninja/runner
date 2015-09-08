@@ -1,8 +1,43 @@
 ###Runner
 An extremely useful multi-threaded SSH command runner with sudo support written in Python. I use this for my daily DevOps adventures to manage hosts and even load balancers. Make sure to add runner to your path and turn on execute permissions. 
 
-- Use scripts/runner.py for a non-proxy version. 
-- Use scripts/prunner.py for a proxy version, that utilizes an existing tunnel (on port 8081) and sconnect. 
+#### Usage
+➜  ~  runner
+usage: runner [-h] [-c COMMANDSTRING] [-cf COMMANDFILE] [-ct CONNECTTIMEOUT]
+              [-d DIVIDER] [-e] [-hf HOSTFILEPATH] [-l] [-lf LOGFILTER]
+              [-ll LOGLEVEL] [-log] [-p PROXYPORT] [-pl PARAMIKOLOGLEVEL]
+              [-r HOSTMATCH] [-s] [-t THREADS] [-T THREADSTIMEOUT]
+              [-u SITEUSER] [-1]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -c COMMANDSTRING      Command to run
+  -cf COMMANDFILE       Specify a 'command file' full of commands to run on
+                        selected machine(s)
+  -ct CONNECTTIMEOUT    SSH connect timeout to hosts in seconds
+  -d DIVIDER            Divide hosts by this number to create chunks of hosts
+                        to run at a time.
+  -e                    Echo's the command ran before the result output
+  -hf HOSTFILEPATH      Specify your own path to a hosts file
+  -l                    List all known hosts
+  -lf LOGFILTER         Filter all logs for (i.e. '[RESULT],[SUMMARY]'
+  -ll LOGLEVEL          Set Log Level: DEBUG, INFO (DEFAULT), WARNING, ERROR,
+                        CRITICAL
+  -log                  Create a logfile. Logging to a file is off by default.
+  -p PROXYPORT          If using SSH Tunnel, define port to use
+  -pl PARAMIKOLOGLEVEL  Set Paramiko Log Level: DEBUG, INFO, WARNING
+                        (DEFAULT), ERROR, CRITICAL
+  -r HOSTMATCH          Select Hosts matching supplied pattern
+  -s                    Run command with sudo (performance is much slower)
+  -t THREADS            Number of threads to run, don't get crazy ! Increasing
+                        threads too much can negatively impact performance.
+  -T THREADSTIMEOUT     Default: 10 (Effects sudo only)
+  -u SITEUSER           Specify a username (by default I use who you are
+                        logged in as)
+  -1                    One host per pool
+
+ERROR - Either -l (list hosts only) or -c (Run command) or -cf (Run command file) is required.
+➜  ~  
 
 ###### Example Non-Sudo Usage
 ➜  bin git:(master) ✗ runner -c 'id' -r tux -c 'id' -log

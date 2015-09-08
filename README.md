@@ -2,6 +2,8 @@
 
 Runner is a simple, multi-threaded command line SSH utility for quick ad-hoc administration tasks and automation.  
 
+Runner has been tested to SSH into Ubuntu, Redhat, Solaris, F5 Bigip's and Cisco IOS devices. 
+
 #### Features & Capabilities
 
 * Provides tunable multi-threaded SSH capabilities (-t) 
@@ -17,7 +19,6 @@ Runner is a simple, multi-threaded command line SSH utility for quick ad-hoc adm
     * (roadmap: templating for advanced automation) 
 * Seemless setup for proxying through a jump host (starttunnel, and then runner -p <port>)
 * Encryption for safely remembering your password. (storePass.py, Runner finds it automatically) 
-* Runner has been tested on Ubuntu, Redhat, Solaris, F5 Bigip's and Cisco IOS. 
 
 #### Usage
 

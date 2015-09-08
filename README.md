@@ -101,6 +101,5 @@ A key file is required for storing your password encrypted to disk. Create a fil
     ➜  bin git:(master) ✗ 
 
 ###### Hosts file
-- The current version requires that you load your hosts into a file, one host per line under ~/.runner/hosts/hosts-all 
-- You can also add custom host files here and used -f to use a custom hosts file with Runner. 
-
+- Runner currently requires that you load your hosts into a file, one host per line under ~/.runner/hosts/hosts-all 
+- You may create as many host files as you like and use -hf to supply a custom hosts file

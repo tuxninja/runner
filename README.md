@@ -40,7 +40,7 @@ An extremely useful multi-threaded SSH command runner with sudo support written 
     ERROR - Either -l (list hosts only) or -c (Run command) or -cf (Run command file) is required.
     ➜  ~  
 
-###### Example Non-Sudo Usage
+#### Example Non-Sudo Usage
     ➜  bin git:(master) ✗ runner -c 'id' -r tux -c 'id' -log
     INFO - [PARAM SET] - FILTERING ONLY HOSTNAMES MATCHING "tux"
     INFO - [PARAM SET] - 1 HOSTS HAVE BEEN SELECTED
@@ -71,10 +71,10 @@ An extremely useful multi-threaded SSH command runner with sudo support written 
     
     ➜  bin git:(master) ✗ 
 
-###### Key File
+#### Key File (Requires manual creation for encryption) 
 A key file is required for storing your password encrypted to disk. Create a file under ~/.runner/.key with a 16,24, or 32 byte character string only.
 
-###### Store Password 
+#### Store Password 
     ➜  scripts git:(master) ✗ storePass.py
     Please Enter Site Pass: 
     INFO:root:Your password has been encrypted & stored for use with Runner.
@@ -100,6 +100,6 @@ A key file is required for storing your password encrypted to disk. Create a fil
     INFO - [LOG] - Your logfile can be viewed @ /Users/jriedel/.runner/logs/runner.log.2015-09-07.13:52:25
     ➜  bin git:(master) ✗ 
 
-###### Hosts file
+#### Required Hosts File & Custom Host Files
 - Runner currently requires that you load your hosts into a file, one host per line under ~/.runner/hosts/hosts-all 
 - You may create as many host files as you like and use -hf to supply a custom hosts file

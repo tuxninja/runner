@@ -65,7 +65,7 @@ Runner has been tested to SSH into Ubuntu, Redhat, Solaris, F5 Bigip's and Cisco
 Real instructions coming soon, for now... 
 
 * git clone https://github.com/tuxninja/runner.git
-* Install dependencies
+* pip install dependencies
 * Copy bin/* to /usr/local/bin or add it to your PATH.
 
 #### Example Non-Sudo Usage

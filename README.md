@@ -3,7 +3,7 @@
 Runner is a simple command line SSH utility that has the following features & capabilites:  
 
 ---
-* Provides multi-threaded SSH capabilities (-t) 
+* Provides tunable multi-threaded SSH capabilities (-t) 
 * Allows for custom hosts files (-hf)
 * Accepts regular expressions for filtering host selections. (-r '^example') 
 * Provides regex for 1 host per pool (-1) 

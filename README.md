@@ -81,7 +81,7 @@ A key file is required for storing your password encrypted to disk. Create a fil
     ➜  scripts git:(master) ✗ 
 
 
-##### Now Run 'Command File' with stored password 
+##### Now We Can Run A 'Command File' with stored password 
     ➜  bin git:(master) ✗ runner -r tux -cf commands -log 
     INFO - [PARAM SET] - FILTERING ONLY HOSTNAMES MATCHING "tux"
     INFO - [PARAM SET] - 1 HOSTS HAVE BEEN SELECTED

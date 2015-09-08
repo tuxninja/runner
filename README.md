@@ -1,6 +1,6 @@
 ###Runner
 
-###### Runner is a simple command line SSH utility that has the following features & capabilites:  
+Runner is a simple command line SSH utility that has the following features & capabilites:  
 ---
 * Provides multi-threaded SSH capabilities (-t) 
 * Allows for custom hosts files (-hf)
@@ -8,7 +8,7 @@
 * Provides regex for 1 host per pool (-1) 
     * Note: Regular Expression may need modification for your hostname convention
 * Can break apart hosts into chunks(groups) to be threaded (-d), (-d 0 = Turbo Mode)  
-* Works with Sudo (-s) 
+* Works with sudo (-s) 
 * Gives you full control over logging & output filtering. (-log, -ll, -pl) 
 * Can run multiple commands using custom command files. (-cf)  
     * (roadmap: templating for advanced automation) 

@@ -70,10 +70,10 @@ Real instructions coming soon, for now...
 
 #### Example Non-Sudo Usage
 
-    ➜  bin git:(master) ✗ runner -c 'id' -r tux -c 'id' -log
+    ➜  bin git:(master) ✗ runner -r tux -c 'id' -log
     INFO - [PARAM SET] - FILTERING ONLY HOSTNAMES MATCHING "tux"
     INFO - [PARAM SET] - 1 HOSTS HAVE BEEN SELECTED
-    INFO - [PARAM SET] - LOGFILE IS /Users/jriedel/.runner/logs/runner.log.2015-09-07.13:46:53
+    INFO - [PARAM SET] - LOGFILE IS /Users/tuxninja/.runner/logs/runner.log.2015-09-07.13:46:53
     INFO - [PARAM SET] - USER IS tuxninja
     INFO - [PARAM SET] - SSH CONNECT TIMEOUT IS 10 SECONDS
     INFO - [PARAM SET] - THREADS IS 10
@@ -85,12 +85,12 @@ Real instructions coming soon, for now...
     
     INFO - [SUMMARY] - Successfully logged into 1/1 hosts and ran your command(s) in 0:00:05 second(s)
     
-    INFO - [LOG] - Your logfile can be viewed @ /Users/jriedel/.runner/logs/runner.log.2015-09-07.13:46:53
+    INFO - [LOG] - Your logfile can be viewed @ /Users/tuxninja/.runner/logs/runner.log.2015-09-07.13:46:53
     ➜  bin git:(master) ✗ 
     
 ###### Example Sudo Usage + Output Filtering
     
-    ➜  bin git:(master) ✗ runner -c 'id' -r tux -c 'id' -log -s -lf RESULT,SUMMARY
+    ➜  bin git:(master) ✗ runner -r tux -c 'id' -log -s -lf RESULT,SUMMARY
     Please Enter Site Pass: 
     
     INFO - [RESULT] - tuxlabs.com: uid=0(root) gid=0(root) groups=0(root)
@@ -117,7 +117,7 @@ A key file is required for storing your password encrypted to disk. Create a fil
     ➜  bin git:(master) ✗ runner -r tux -cf commands -log 
     INFO - [PARAM SET] - FILTERING ONLY HOSTNAMES MATCHING "tux"
     INFO - [PARAM SET] - 1 HOSTS HAVE BEEN SELECTED
-    INFO - [PARAM SET] - LOGFILE IS /Users/jriedel/.runner/logs/runner.log.2015-09-07.13:52:25
+    INFO - [PARAM SET] - LOGFILE IS /Users/tuxninja/.runner/logs/runner.log.2015-09-07.13:52:25
     INFO - [PARAM SET] - USER IS tuxninja
     INFO - [PARAM SET] - SSH CONNECT TIMEOUT IS 10 SECONDS
     INFO - [PARAM SET] - THREADS IS 10
@@ -129,7 +129,7 @@ A key file is required for storing your password encrypted to disk. Create a fil
     
     INFO - [SUMMARY] - Successfully logged into 1/1 hosts and ran your command(s) in 0:00:02 second(s)
     
-    INFO - [LOG] - Your logfile can be viewed @ /Users/jriedel/.runner/logs/runner.log.2015-09-07.13:52:25
+    INFO - [LOG] - Your logfile can be viewed @ /Users/tuxninja/.runner/logs/runner.log.2015-09-07.13:52:25
     ➜  bin git:(master) ✗ 
 
 #### Required Hosts File & Custom Host Files

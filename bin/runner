@@ -153,7 +153,7 @@ def clean_output(output, cmd):
     elif output.startswith('[root') and output.endswith(cmd):
         return False
     # root prompt only
-    elif re.match(r'.*~?]#$', output):
+    elif re.match(r'.*~?]?#$', output):
         return False
     # user prompt only
     elif re.match(r'.*~?]\$$', output):

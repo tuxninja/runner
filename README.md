@@ -1,5 +1,6 @@
 ###Runner
-An extremely useful multi-threaded SSH command runner with sudo support written in Python. I use this for my daily DevOps adventures to manage hosts and even load balancers. Make sure to add runner to your path and turn on execute permissions. 
+Like Ansible, Runner is a simple utility that provides a command line interface for Multi-threaded SSH commands to run. It supports Sudo, Proxying through a jump host, and can remember your login credentials securely. In addition to running raw commands, command files are the basic building blocks for automation. Currently, you must list commands one by one in a command file, but in the future we will provide a rich templating language for these tasks.
+ Runner has been tested with multiple flavors of Linux & Unix machines as well as F5 load balancers. However, it has not been tested on Cisco hardware or other networking gear yet. 
 
 #### Usage
     ➜  ~  runner

@@ -1,5 +1,5 @@
 ###Runner
-Runner is a simple command line utility with these features: 
+> Runner is a simple command line SSH utility that has the following features & capabilites:  
 * Provides multi-threaded SSH capabilities (-t) 
 * Allows for custom hosts files (-hf)
 * Accepts regular expressions for filtering host selections. (-r '^example') 
@@ -8,7 +8,8 @@ Runner is a simple command line utility with these features:
 * Can break apart hosts into chunks(groups) to be threaded (-d), (-d 0 = Turbo Mode)  
 * Works with Sudo (-s) 
 * Gives you full control over logging & output filtering. (-log, -ll, -pl) 
-* Can run multiple commands using custom command files. (-cf)  (roadmap: templating for advanced automation) 
+* Can run multiple commands using custom command files. (-cf)  
+    * (roadmap: templating for advanced automation) 
 * Seemless setup for proxying through a jump host (starttunnel, and then runner -p <port>)
 * Encryption for safely remembering your password. (storePass.py, Runner finds it automatically) 
 

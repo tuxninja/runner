@@ -23,36 +23,36 @@ Runner has been tested to SSH into Ubuntu, Redhat, Solaris, F5 Bigip's and Cisco
 #### Usage
 
     ➜  ~  runner
-    
     usage: runner [-h] [-c COMMANDSTRING] [-cf COMMANDFILE] [-ct CONNECTTIMEOUT]
-                  [-d DIVIDER] [-e] [-hf HOSTFILEPATH] [-l] [-lf LOGFILTER]
-                  [-ll LOGLEVEL] [-log] [-p PROXYPORT] [-pl PARAMIKOLOGLEVEL]
-                  [-r HOSTMATCH] [-s] [-t THREADS] [-T THREADSTIMEOUT]
-                  [-u SITEUSER] [-1]
+                  [-cmdt CMDTIMEOUT] [-d DIVIDER] [-e] [--filter LOGFILTER]
+                  [-hf HOSTFILEPATH] [-l] [-lf [LOGFILE]] [-ll LOGLEVEL]
+                  [-p PROXYPORT] [-pl PARAMIKOLOGLEVEL] [-r HOSTMATCH] [-s]
+                  [-t THREADS] [-u SITEUSER] [-1]
     
     optional arguments:
       -h, --help            show this help message and exit
       -c COMMANDSTRING      Command to run
       -cf COMMANDFILE       Specify a 'command file' full of commands to run on
                             selected machine(s)
-      -ct CONNECTTIMEOUT    SSH connect timeout to hosts in seconds
+      -ct CONNECTTIMEOUT    SSH connect timeout to hosts in seconds: default (10)
+      -cmdt CMDTIMEOUT      Timeout for how long to let commands run: default (60)
       -d DIVIDER            Divide hosts by this number to create chunks of hosts
                             to run at a time.
       -e                    Echo's the command ran before the result output
+      --filter LOGFILTER    Filter all logs for (i.e. '[RESULT],[SUMMARY]'
       -hf HOSTFILEPATH      Specify your own path to a hosts file
       -l                    List all known hosts
-      -lf LOGFILTER         Filter all logs for (i.e. '[RESULT],[SUMMARY]'
+      -lf [LOGFILE]         Turns logging on, can also take logfile location as a
+                            parameter.
       -ll LOGLEVEL          Set Log Level: DEBUG, INFO (DEFAULT), WARNING, ERROR,
                             CRITICAL
-      -log                  Create a logfile. Logging to a file is off by default.
       -p PROXYPORT          If using SSH Tunnel, define port to use
-      -pl PARAMIKOLOGLEVEL  Set Paramiko Log Level: DEBUG, INFO, WARNING
-                            (DEFAULT), ERROR, CRITICAL
+      -pl PARAMIKOLOGLEVEL  Set Paramiko Log Level: DEBUG, INFO, WARNING, ERROR,
+                            CRITICAL (DEFAULT)
       -r HOSTMATCH          Select Hosts matching supplied pattern
       -s                    Run command with sudo (performance is much slower)
       -t THREADS            Number of threads to run, don't get crazy ! Increasing
                             threads too much can negatively impact performance.
-      -T THREADSTIMEOUT     Default: 10 (Effects sudo only)
       -u SITEUSER           Specify a username (by default I use who you are
                             logged in as)
       -1                    One host per pool
@@ -70,14 +70,13 @@ Real instructions coming soon, for now...
 
 #### Example Non-Sudo Usage
 
-    ➜  bin git:(master) ✗ runner -r tux -c 'id' -log
+    ➜  bin git:(master) ✗ runner -r tux -c 'id' -lf
     INFO - [PARAM SET] - FILTERING ONLY HOSTNAMES MATCHING "tux"
     INFO - [PARAM SET] - 1 HOSTS HAVE BEEN SELECTED
     INFO - [PARAM SET] - LOGFILE IS /Users/tuxninja/.runner/logs/runner.log.2015-09-07.13:46:53
     INFO - [PARAM SET] - USER IS tuxninja
     INFO - [PARAM SET] - SSH CONNECT TIMEOUT IS 10 SECONDS
     INFO - [PARAM SET] - THREADS IS 10
-    INFO - [PARAM SET] - THREADS TIMEOUT IS 10
     INFO - [PARAM SET] - DIVIDER IS 10 CREATING 1 CHUNKS
     Please Enter Site Pass: 
     
@@ -90,7 +89,7 @@ Real instructions coming soon, for now...
     
 #### Example Sudo Usage + Output Filtering
     
-    ➜  bin git:(master) ✗ runner -r tux -c 'id' -log -s -lf RESULT,SUMMARY
+    ➜  bin git:(master) ✗ runner -r tux -c 'id' -lf -s --filter RESULT,SUMMARY
     Please Enter Site Pass: 
     
     INFO - [RESULT] - tuxlabs.com: uid=0(root) gid=0(root) groups=0(root)
@@ -115,7 +114,6 @@ Real instructions coming soon, for now...
     INFO - [PARAM SET] - USER IS tuxninja
     INFO - [PARAM SET] - SSH CONNECT TIMEOUT IS 10 SECONDS
     INFO - [PARAM SET] - THREADS IS 10
-    INFO - [PARAM SET] - THREADS TIMEOUT IS 10
     INFO - [PARAM SET] - DIVIDER IS 10 CREATING 1 CHUNKS
     INFO - [PARAM SET] - RETRIEVED ENCRYPTED PASSWD
     INFO - [RESULT] - tuxlabs.com: uid=1000(tuxninja) gid=1000(tuxninja) groups=1000(tuxninja),27(sudo)
@@ -124,28 +122,24 @@ Real instructions coming soon, for now...
     
     ➜  bin git:(master) ✗ 
 
-#### Key File (Requires manual creation for encryption) 
-
-A key file is required for storing your password encrypted to disk. Create a file under ~/.runner/.key with a 16,24, or 32 byte character string only.
-
 #### Store Password 
 
-    ➜  scripts git:(master) ✗ storePass.py
+    ➜  ~  storePass.py                                                                   
+    A key file was not found, you must create one.
+    Enter Key(16,24, or 32 characters): 
     Please Enter Site Pass: 
     INFO:root:Your password has been encrypted & stored for use with Runner.
-    ➜  scripts git:(master) ✗ 
-
+    ➜  ~  
 
 #### Now We Can Run A 'Command File' with stored password 
 
-    ➜  bin git:(master) ✗ runner -r tux -cf commands -log 
+    ➜  bin git:(master) ✗ runner -r tux -cf commands -lf
     INFO - [PARAM SET] - FILTERING ONLY HOSTNAMES MATCHING "tux"
     INFO - [PARAM SET] - 1 HOSTS HAVE BEEN SELECTED
     INFO - [PARAM SET] - LOGFILE IS /Users/tuxninja/.runner/logs/runner.log.2015-09-07.13:52:25
     INFO - [PARAM SET] - USER IS tuxninja
     INFO - [PARAM SET] - SSH CONNECT TIMEOUT IS 10 SECONDS
     INFO - [PARAM SET] - THREADS IS 10
-    INFO - [PARAM SET] - THREADS TIMEOUT IS 10
     INFO - [PARAM SET] - DIVIDER IS 10 CREATING 1 CHUNKS
     INFO - [PARAM SET] - RETRIEVED ENCRYPTED PASSWD
     INFO - [RESULT] - tuxlabs.com: uid=1000(tuxninja) gid=1000(tuxninja) groups=1000(tuxninja),27(sudo)

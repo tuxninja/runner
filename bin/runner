@@ -1,5 +1,5 @@
 #!/usr/local/bin/python2.7
-__author__ = 'Jason Riedel (tuxninja)'
+__author__ = 'jriedel'
 __description__ = 'Command line utility for quickly managing devices through SSH with some super cool & handy features.'
 __version__ = '2.1'
 
@@ -27,7 +27,7 @@ parser.add_argument('-cf', action="store", dest="commandFile", required=False,
                     help="Specify a 'command file' full of commands to run on selected machine(s)")
 parser.add_argument('-ct', action="store", dest="connectTimeout", type=int, required=False,
                     help="SSH connect timeout to hosts in seconds: default (10)")
-parser.add_argument('-cmdt', action="store", dest="cmdTimeout", type=int, required=False, help="Timeout for how long to let commands run: default (60)")
+parser.add_argument('-cmdt', action="store", dest="cmdTimeout", required=False, help="Timeout for how long to let commands run: default (off, waits for command to finish)")
 parser.add_argument('-d', action="store", dest="divider", required=False, help="Divide hosts by this number to create chunks of hosts to run at a time.")
 parser.add_argument('-e', action="store_true", dest="echoCmd", required=False,
                     help="Echo's the command ran before the result output")
@@ -106,9 +106,9 @@ def check_args_and_set_default(args):
         connectTimeout = args.connectTimeout
 
     ## SET CMD TIMEOUT ##
-    cmdTimeout = 60
+    cmdTimeout = 0 # off by default, waits for command to finish
     if args.cmdTimeout:
-        cmdTimeout = args.cmdTimeout
+        cmdTimeout = int(args.cmdTimeout)
 
     ## SET THREADS / WORKERS ##
     workers = 10
@@ -126,7 +126,7 @@ def check_args_and_set_default(args):
     if args.divider:
         divider = int(args.divider)
 
-    return (hostFilePath, connectTimeout, workers, siteUser, divider)
+    return (hostFilePath, connectTimeout, cmdTimeout, workers, siteUser, divider)
 
 
 def create_log(logger):
@@ -374,7 +374,7 @@ def decrypt_the_pass(encryptedPass):
         logging.error(e)
 
 if __name__ == "__main__":
-    (hostFilePath, connectTimeout, workers, siteUser, divider) = check_args_and_set_default(args)
+    (hostFilePath, connectTimeout, cmdTimeout, workers, siteUser, divider) = check_args_and_set_default(args)
 
     try:
         if args.listOnly or args.commandString or args.commandFile:
@@ -391,6 +391,8 @@ if __name__ == "__main__":
                     logger.info("[PARAM SET] - LOGFILE IS %s" % logfilePath)
                 logger.info("[PARAM SET] - USER IS %s" % siteUser)
                 logger.info("[PARAM SET] - SSH CONNECT TIMEOUT IS %s SECONDS" % connectTimeout)
+                if args.cmdTimeout:
+                    logger.info("[PARAM SET] - COMMAND TIMEOUT IS %s SECONDS" % cmdTimeout)
                 logger.info("[PARAM SET] - THREADS IS %s" % workers)
                 if args.sudo:
                     logger.info("[PARAM SET] - SUDO ACTIVATED")

@@ -1,7 +1,7 @@
 #!/usr/local/bin/python2.7
-__author__ = 'jriedel'
+__author__ = 'Jason Riedel (tuxninja)'
 __description__ = 'Command line utility for quickly managing devices through SSH with some super cool & handy features.'
-__version__ = '2.0'
+__version__ = '2.1'
 
 import paramiko
 import getpass
@@ -25,25 +25,25 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-c', action="store", dest="commandString", required=False, help="Command to run")
 parser.add_argument('-cf', action="store", dest="commandFile", required=False,
                     help="Specify a 'command file' full of commands to run on selected machine(s)")
-parser.add_argument('-ct', action="store", dest="connectTimeout", required=False,
-                    help="SSH connect timeout to hosts in seconds")
+parser.add_argument('-ct', action="store", dest="connectTimeout", type=int, required=False,
+                    help="SSH connect timeout to hosts in seconds: default (10)")
+parser.add_argument('-cmdt', action="store", dest="cmdTimeout", type=int, required=False, help="Timeout for how long to let commands run: default (60)")
 parser.add_argument('-d', action="store", dest="divider", required=False, help="Divide hosts by this number to create chunks of hosts to run at a time.")
 parser.add_argument('-e', action="store_true", dest="echoCmd", required=False,
                     help="Echo's the command ran before the result output")
+parser.add_argument('--filter', action="store", dest="logFilter", required=False, help="Filter all logs for (i.e. '[RESULT],[SUMMARY]'")
 parser.add_argument('-hf', action="store", dest="hostFilePath", required=False,
                     help="Specify your own path to a hosts file")
 parser.add_argument('-l', action="store_true", dest="listOnly", required=False, help="List all known hosts")
-parser.add_argument('-lf', action="store", dest="logFilter", required=False, help="Filter all logs for (i.e. '[RESULT],[SUMMARY]'")
+parser.add_argument('-lf', action="store", dest="logfile", nargs='?', const="nofile", required=False, help="Turns logging on, can also take logfile location as a parameter.")
 parser.add_argument('-ll', action="store", dest="logLevel", required=False, help="Set Log Level: DEBUG, INFO (DEFAULT), WARNING, ERROR, CRITICAL")
-parser.add_argument('-log', action="store_true", dest="loggingOn", required=False, help="Create a logfile. Logging to a file is off by default.")
-parser.add_argument('-p', action="store", dest="proxyPort", required=False, help="If using SSH Tunnel, define port to use")
-parser.add_argument('-pl', action="store", dest="paramikoLogLevel", required=False, help="Set Paramiko Log Level: DEBUG, INFO, WARNING (DEFAULT), ERROR, CRITICAL")
+parser.add_argument('-p', action="store", dest="proxyPort", type=int, required=False, help="If using SSH Tunnel, define port to use")
+parser.add_argument('-pl', action="store", dest="paramikoLogLevel", required=False, help="Set Paramiko Log Level: DEBUG, INFO, WARNING, ERROR, CRITICAL (DEFAULT)")
 parser.add_argument('-r', action="store", dest="hostMatch", required=False,
                     help="Select Hosts matching supplied pattern")
 parser.add_argument('-s', action="store_true", dest="sudo", required=False,
                     help="Run command with sudo (performance is much slower)")
-parser.add_argument('-t', action="store", dest="threads", required=False, help="Number of threads to run, don't get crazy ! Increasing threads too much can negatively impact performance.")
-parser.add_argument('-T', action="store", dest="threadsTimeout", required=False, help="Default: 10 (Effects sudo only)")
+parser.add_argument('-t', action="store", dest="threads", type=int, required=False, help="Number of threads to run, don't get crazy ! Increasing threads too much can negatively impact performance.")
 parser.add_argument('-u', action="store", dest="siteUser", required=False,
                     help="Specify a username (by default I use who you are logged in as)")
 parser.add_argument('-1', action="store_true", dest="hostPerPool", required=False, help="One host per pool")
@@ -72,7 +72,7 @@ class ResultFilter(logging.Filter):
                 return True
 
 #Paramiko
-logging.getLogger('paramiko').setLevel(logging.WARNING)
+logging.getLogger('paramiko').setLevel(logging.CRITICAL)
 #Runner
 logger = logging.getLogger('runner')
 if args.logFilter:
@@ -100,25 +100,25 @@ def check_args_and_set_default(args):
     if args.hostFilePath:
         hostFilePath = args.hostFilePath
 
-    ## SET TIMEOUT ##
+    ## SET CONNECT TIMEOUT ##
     connectTimeout = 10
     if args.connectTimeout:
         connectTimeout = args.connectTimeout
 
+    ## SET CMD TIMEOUT ##
+    cmdTimeout = 60
+    if args.cmdTimeout:
+        cmdTimeout = args.cmdTimeout
+
     ## SET THREADS / WORKERS ##
     workers = 10
     if args.threads:
-        workers = int(args.threads)
+        workers = args.threads
 
     ## SET USER / PASS ##
     siteUser = getpass.getuser()
     if args.siteUser:
         siteUser = args.siteUser
-
-    ## only effects sudo
-    threadsTimeout = 10
-    if args.threadsTimeout:
-        threadsTimeout = int(args.threadsTimeout)
 
     ## DEFAULT CHUNKS ##
     # Use -d 0 to turn off chunking
@@ -126,18 +126,22 @@ def check_args_and_set_default(args):
     if args.divider:
         divider = int(args.divider)
 
-    return (hostFilePath, connectTimeout, workers, siteUser, threadsTimeout, divider)
+    return (hostFilePath, connectTimeout, workers, siteUser, divider)
 
 
 def create_log(logger):
-    ## SET HOME DIR & LOG DIR ##
-    logfile_dir = "%s/.runner/logs" % (home_dir)
+    ## if they turned logging on, but didn't specify a file, use a default.
+    if args.logfile == "nofile":
+        logfile_dir = "%s/.runner/logs" % (home_dir)
+        tstamp = datetime.datetime.now().strftime("%Y-%m-%d.%H:%M:%S")
 
-    tstamp = datetime.datetime.now().strftime("%Y-%m-%d.%H:%M:%S")
+        if not os.path.exists(logfile_dir):
+            os.makedirs(logfile_dir)
+        logfilePath = '%s/runner.log.%s' % (logfile_dir, tstamp)
+    else:
+        logfile = args.logfile
+        logfilePath = os.path.expanduser(logfile)
 
-    if not os.path.exists(logfile_dir):
-        os.makedirs(logfile_dir)
-    logfilePath = '%s/runner.log.%s' % (logfile_dir, tstamp)
     fh = logging.FileHandler(logfilePath,"w")
     logger.addHandler(fh)
     formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
@@ -151,6 +155,9 @@ def clean_output(output, cmd):
         return False
     # prompt & command
     elif output.startswith('[root') and output.endswith(cmd):
+        return False
+    # prompt & command different format
+    elif output.startswith('root@') and output.endswith('#'):
         return False
     # root prompt only
     elif re.match(r'.*~?]?#$', output):
@@ -181,7 +188,7 @@ def clean_output(output, cmd):
     return output
 
 
-def run_cmds(ssh, cmds, hostname, sitePasswd, threadsTimeout):
+def run_cmds(ssh, cmds, hostname, sitePasswd, connectTimeout):
     ## Echo's commands that provide no results. Helpful when working on network devices (i.e. LTM)
     if args.echoCmd:
         logger.info('[RESULT] - %s: %s' % (hostname, cmd))
@@ -189,7 +196,7 @@ def run_cmds(ssh, cmds, hostname, sitePasswd, threadsTimeout):
     if args.sudo:
         try:
             channel = ssh.invoke_shell() ## invoking shell each time potential performance hit for -cf
-            channel.settimeout(threadsTimeout)
+            channel.settimeout(connectTimeout)
 
             buff = ''
             while not buff.endswith('$ '):
@@ -248,9 +255,9 @@ def run_cmds(ssh, cmds, hostname, sitePasswd, threadsTimeout):
             logger.error(e)
             ssh.close()
 
-def ssh_to_host(hosts, sitePasswd, threadsTimeout):
+def ssh_to_host(hosts, sitePasswd, connectTimeout):
         for i in range(workers):
-            t = threading.Thread(target=worker, args=(siteUser, sitePasswd, threadsTimeout))
+            t = threading.Thread(target=worker, args=(siteUser, sitePasswd, connectTimeout))
             t.daemon = True
             t.start()
 
@@ -261,25 +268,25 @@ def ssh_to_host(hosts, sitePasswd, threadsTimeout):
 
         q.join()
 
-def worker(siteUser, sitePasswd, threadsTimeout):
+def worker(siteUser, sitePasswd, connectTimeout):
     while True:
         hostname = q.get()
-        node_shell(hostname, siteUser, sitePasswd, threadsTimeout)
+        node_shell(hostname, siteUser, sitePasswd, connectTimeout)
         q.task_done()
 
 
-def node_shell(hostname, siteUser, sitePasswd, threadsTimeout):
+def node_shell(hostname, siteUser, sitePasswd, connectTimeout):
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     try:
         if not args.proxyPort:
-            ssh.connect(hostname, username=siteUser, password=sitePasswd, timeout=connectTimeout, look_for_keys=False)
+            ssh.connect(hostname, username=siteUser, password=sitePasswd, timeout=connectTimeout, banner_timeout=connectTimeout, look_for_keys=False)
             logger.debug('Connected: %s, %s, %s, proxy disabled' % (hostname, siteUser, connectTimeout))
         else:
             proxyPort = args.proxyPort
             proxyCommandStr = "nc -X 5 -x localhost:%s %s %s" % (proxyPort, hostname, '22')
             proxySock = paramiko.ProxyCommand(proxyCommandStr)
-            ssh.connect(hostname, username=siteUser, password=sitePasswd, timeout=connectTimeout, sock=proxySock, look_for_keys=False)
+            ssh.connect(hostname, username=siteUser, password=sitePasswd, timeout=connectTimeout, banner_timeout=connectTimeout, sock=proxySock, look_for_keys=False)
             logger.debug('Connected: %s, %s, %s, proxy enabled' % (hostname, siteUser, connectTimeout))
         transport = ssh.get_transport()
         transport.set_keepalive(0)
@@ -294,7 +301,7 @@ def node_shell(hostname, siteUser, sitePasswd, threadsTimeout):
             cmd = args.commandString
             cmds = [cmd]
 
-        run_cmds(ssh, cmds, hostname, sitePasswd, threadsTimeout)
+        run_cmds(ssh, cmds, hostname, sitePasswd, connectTimeout)
 
         successful_logins.append(hostname)
 
@@ -367,7 +374,7 @@ def decrypt_the_pass(encryptedPass):
         logging.error(e)
 
 if __name__ == "__main__":
-    (hostFilePath, connectTimeout, workers, siteUser, threadsTimeout, divider) = check_args_and_set_default(args)
+    (hostFilePath, connectTimeout, workers, siteUser, divider) = check_args_and_set_default(args)
 
     try:
         if args.listOnly or args.commandString or args.commandFile:
@@ -379,13 +386,12 @@ if __name__ == "__main__":
                 if len(selected_hosts) == 0:
                     logger.info("No hosts could be found. Ensure you have a hosts file and that your regular expression is matching correctly if you set one.")
                     exit()
-                if args.loggingOn:
+                if args.logfile:
                     logfilePath = create_log(logger)
                     logger.info("[PARAM SET] - LOGFILE IS %s" % logfilePath)
                 logger.info("[PARAM SET] - USER IS %s" % siteUser)
                 logger.info("[PARAM SET] - SSH CONNECT TIMEOUT IS %s SECONDS" % connectTimeout)
                 logger.info("[PARAM SET] - THREADS IS %s" % workers)
-                logger.info("[PARAM SET] - THREADS TIMEOUT IS %s" % threadsTimeout)
                 if args.sudo:
                     logger.info("[PARAM SET] - SUDO ACTIVATED")
                 # Magic that breaks apart your host list chunks of X.
@@ -418,7 +424,7 @@ if __name__ == "__main__":
                 q = Queue.Queue()
 
                 for host_chunk in chunks:
-                    ssh_to_host(host_chunk, sitePasswd, threadsTimeout)
+                    ssh_to_host(host_chunk, sitePasswd, connectTimeout)
 
                 ## end timer ##
                 etime = time.time()
@@ -434,7 +440,7 @@ if __name__ == "__main__":
                     for failed_host in failed_logins:
                         logger.info('[FAILED] - to login to: %s' % (failed_host))
                     print ""
-                if args.loggingOn:
+                if args.logfile:
                     logger.info("[LOG] - Your logfile can be viewed @ %s" % (logfilePath))
         else:
             parser.print_help()

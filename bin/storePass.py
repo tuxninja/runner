@@ -1,5 +1,5 @@
 #!/usr/local/bin/python2.7
-__author__ = 'Jason Riedel (tuxninja)'
+__author__ = 'jriedel'
 __description__ = 'Command line utility for storing encrypted password for use with runner.'
 __version__ = '1.0'
 
@@ -32,15 +32,26 @@ def store_data(cipherText):
 
     logging.info("Your password has been encrypted & stored for use with Runner.")
 
+def create_key_file(kfPath):
+    print "A key file was not found, you must create one."
+    key = getpass.getpass("Enter Key(16,24, or 32 characters): ")
+    kf = open(kfPath, 'w')
+    line = "%s" % (key)
+    kf.write(line)
+    kf.close()
+
+    return key
+
 def get_key():
     try:
         kfPath = '%s/.runner/.key' % (home_dir)
         kf = open(kfPath)
+    except IOError as e:
+        key = create_key_file(kfPath)
+    else:
         key = kf.readline()
         key = key.strip()
-    except Exception as e:
-        logging.error(e)
-        exit()
+
     return key
 
 if __name__ == '__main__':

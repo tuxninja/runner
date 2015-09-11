@@ -207,7 +207,7 @@ def run_cmds(ssh, cmds, hostname, sitePasswd, cmdTimeout):
                 # This timer fixes a bug where SSH closes immediately after login
                 time.sleep(1)
                 if timer == connectTimeout:
-                    raise Exception("Closing channel because after logging in I didn't receive a prompt after %s seconds")
+                    raise Exception("Closing channel because after logging in I didn't receive a prompt after %s seconds" % connectTimeout)
 
             sudocmd = 'sudo -s'
             channel.send(sudocmd + '\n')
@@ -253,6 +253,9 @@ def run_cmds(ssh, cmds, hostname, sitePasswd, cmdTimeout):
     else:
         try:
             for cmd in cmds:
+                ## Echo's commands that provide no results. Helpful when working on network devices (i.e. LTM)
+                if args.echoCmd:
+                    logger.info('[RESULT] - %s: %s' % (hostname, cmd))
                 (stdin, stdout, stderr) = ssh.exec_command(cmd, cmdTimeout)
                 logger.debug('%s: [SENT] "%s"' % (hostname, cmd))
 

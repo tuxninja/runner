@@ -1,7 +1,7 @@
 #!/usr/local/bin/python2.7
 __author__ = 'jriedel'
 __description__ = 'Command line utility for quickly managing devices through SSH with some super cool & handy features.'
-__version__ = '2.1'
+__version__ = '2.2'
 
 import paramiko
 import getpass
@@ -25,9 +25,9 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-c', action="store", dest="commandString", required=False, help="Command to run")
 parser.add_argument('-cf', action="store", dest="commandFile", required=False,
                     help="Specify a 'command file' full of commands to run on selected machine(s)")
-parser.add_argument('-ct', action="store", dest="connectTimeout", type=int, required=False,
+parser.add_argument('-ct', action="store", dest="connectTimeout", required=False,
                     help="SSH connect timeout to hosts in seconds: default (10)")
-parser.add_argument('-cmdt', action="store", dest="cmdTimeout", required=False, help="Timeout for how long to let commands run: default (off, waits for command to finish)")
+parser.add_argument('-cmdt', action="store", dest="cmdTimeout", required=False, help="Timeout for how long to let commands run: default (60)")
 parser.add_argument('-d', action="store", dest="divider", required=False, help="Divide hosts by this number to create chunks of hosts to run at a time.")
 parser.add_argument('-e', action="store_true", dest="echoCmd", required=False,
                     help="Echo's the command ran before the result output")
@@ -37,13 +37,13 @@ parser.add_argument('-hf', action="store", dest="hostFilePath", required=False,
 parser.add_argument('-l', action="store_true", dest="listOnly", required=False, help="List all known hosts")
 parser.add_argument('-lf', action="store", dest="logfile", nargs='?', const="nofile", required=False, help="Turns logging on, can also take logfile location as a parameter.")
 parser.add_argument('-ll', action="store", dest="logLevel", required=False, help="Set Log Level: DEBUG, INFO (DEFAULT), WARNING, ERROR, CRITICAL")
-parser.add_argument('-p', action="store", dest="proxyPort", type=int, required=False, help="If using SSH Tunnel, define port to use")
+parser.add_argument('-p', action="store", dest="proxyPort", required=False, help="If using SSH Tunnel, define port to use")
 parser.add_argument('-pl', action="store", dest="paramikoLogLevel", required=False, help="Set Paramiko Log Level: DEBUG, INFO, WARNING, ERROR, CRITICAL (DEFAULT)")
 parser.add_argument('-r', action="store", dest="hostMatch", required=False,
                     help="Select Hosts matching supplied pattern")
 parser.add_argument('-s', action="store_true", dest="sudo", required=False,
                     help="Run command with sudo (performance is much slower)")
-parser.add_argument('-t', action="store", dest="threads", type=int, required=False, help="Number of threads to run, don't get crazy ! Increasing threads too much can negatively impact performance.")
+parser.add_argument('-t', action="store", dest="threads", required=False, help="Number of threads to run, don't get crazy ! Increasing threads too much can negatively impact performance.")
 parser.add_argument('-u', action="store", dest="siteUser", required=False,
                     help="Specify a username (by default I use who you are logged in as)")
 parser.add_argument('-1', action="store_true", dest="hostPerPool", required=False, help="One host per pool")
@@ -103,17 +103,17 @@ def check_args_and_set_default(args):
     ## SET CONNECT TIMEOUT ##
     connectTimeout = 10
     if args.connectTimeout:
-        connectTimeout = args.connectTimeout
+        connectTimeout = int(args.connectTimeout)
 
     ## SET CMD TIMEOUT ##
-    cmdTimeout = 0 # off by default, waits for command to finish
+    cmdTimeout = None
     if args.cmdTimeout:
-        cmdTimeout = int(args.cmdTimeout)
+        cmdTimeout = float(args.cmdTimeout)
 
     ## SET THREADS / WORKERS ##
     workers = 10
     if args.threads:
-        workers = args.threads
+        workers = int(args.threads)
 
     ## SET USER / PASS ##
     siteUser = getpass.getuser()
@@ -188,20 +188,25 @@ def clean_output(output, cmd):
     return output
 
 
-def run_cmds(ssh, cmds, hostname, sitePasswd, connectTimeout):
+def run_cmds(ssh, cmds, hostname, sitePasswd, cmdTimeout):
     ## Echo's commands that provide no results. Helpful when working on network devices (i.e. LTM)
     if args.echoCmd:
         logger.info('[RESULT] - %s: %s' % (hostname, cmd))
 
     if args.sudo:
         try:
-            channel = ssh.invoke_shell() ## invoking shell each time potential performance hit for -cf
-            channel.settimeout(connectTimeout)
+            channel = ssh.invoke_shell()
+            channel.settimeout(cmdTimeout)
 
             buff = ''
+            timer=0
             while not buff.endswith('$ '):
                 resp = channel.recv(9999)
                 buff += resp
+                timer += 1
+                # This timer fixes a bug where SSH closes immediately after login
+                if timer == connectTimeout:
+                    raise Exception('Channel closed unexpectedly')
 
             sudocmd = 'sudo -s'
             channel.send(sudocmd + '\n')
@@ -211,7 +216,6 @@ def run_cmds(ssh, cmds, hostname, sitePasswd, connectTimeout):
             while not 'assword' in buff:
                 resp = channel.recv(9999)
                 buff += resp
-
 
             channel.send(sitePasswd + '\n')
             logger.debug('%s: [SENT] sudo pass' % hostname)
@@ -234,12 +238,18 @@ def run_cmds(ssh, cmds, hostname, sitePasswd, connectTimeout):
                     line = line.strip()
                     if clean_output(line, cmd):
                        logger.info('[RESULT] - %s: %s' % (hostname, line))
+
         except Exception as e:
-            logger.error(e)
+            channel.close()
+            logger.debug('channel closed')
+            raise Exception(e)
+        else:
+            logger.debug('channel closed')
+            channel.close()
     else:
         try:
             for cmd in cmds:
-                (stdin, stdout, stderr) = ssh.exec_command(cmd)
+                (stdin, stdout, stderr) = ssh.exec_command(cmd, cmdTimeout)
                 logger.debug('%s: [SENT] "%s"' % (hostname, cmd))
 
                 for line in stdout.readlines():
@@ -253,11 +263,13 @@ def run_cmds(ssh, cmds, hostname, sitePasswd, connectTimeout):
                     logger.info('[RESULT] - %s: %s' % (hostname, line))
         except Exception as e:
             logger.error(e)
-            ssh.close()
+            raise Exception(e)
+    logger.debug("ssh closed")
+    ssh.close()
 
-def ssh_to_host(hosts, sitePasswd, connectTimeout):
+def ssh_to_host(hosts, sitePasswd, connectTimeout, cmdTimeout):
         for i in range(workers):
-            t = threading.Thread(target=worker, args=(siteUser, sitePasswd, connectTimeout))
+            t = threading.Thread(target=worker, args=(siteUser, sitePasswd, connectTimeout, cmdTimeout))
             t.daemon = True
             t.start()
 
@@ -268,14 +280,18 @@ def ssh_to_host(hosts, sitePasswd, connectTimeout):
 
         q.join()
 
-def worker(siteUser, sitePasswd, connectTimeout):
+def worker(siteUser, sitePasswd, connectTimeout, cmdTimeout):
     while True:
-        hostname = q.get()
-        node_shell(hostname, siteUser, sitePasswd, connectTimeout)
-        q.task_done()
+        try:
+            hostname = q.get()
+        except Exception as e:
+            logger.exeception(e)
+        else:
+            node_shell(hostname, siteUser, sitePasswd, connectTimeout, cmdTimeout)
+            q.task_done()
 
 
-def node_shell(hostname, siteUser, sitePasswd, connectTimeout):
+def node_shell(hostname, siteUser, sitePasswd, connectTimeout, cmdTimeout):
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     try:
@@ -283,7 +299,7 @@ def node_shell(hostname, siteUser, sitePasswd, connectTimeout):
             ssh.connect(hostname, username=siteUser, password=sitePasswd, timeout=connectTimeout, banner_timeout=connectTimeout, look_for_keys=False)
             logger.debug('Connected: %s, %s, %s, proxy disabled' % (hostname, siteUser, connectTimeout))
         else:
-            proxyPort = args.proxyPort
+            proxyPort = int(args.proxyPort)
             proxyCommandStr = "nc -X 5 -x localhost:%s %s %s" % (proxyPort, hostname, '22')
             proxySock = paramiko.ProxyCommand(proxyCommandStr)
             ssh.connect(hostname, username=siteUser, password=sitePasswd, timeout=connectTimeout, banner_timeout=connectTimeout, sock=proxySock, look_for_keys=False)
@@ -301,11 +317,13 @@ def node_shell(hostname, siteUser, sitePasswd, connectTimeout):
             cmd = args.commandString
             cmds = [cmd]
 
-        run_cmds(ssh, cmds, hostname, sitePasswd, connectTimeout)
+        run_cmds(ssh, cmds, hostname, sitePasswd, cmdTimeout)
 
         successful_logins.append(hostname)
 
     except Exception as e:
+        ssh.close()
+        logger.debug('ssh closed')
         logger.error('%s: failed to login : %s' % (hostname, e))
         failed_logins.append(hostname)
 
@@ -391,8 +409,6 @@ if __name__ == "__main__":
                     logger.info("[PARAM SET] - LOGFILE IS %s" % logfilePath)
                 logger.info("[PARAM SET] - USER IS %s" % siteUser)
                 logger.info("[PARAM SET] - SSH CONNECT TIMEOUT IS %s SECONDS" % connectTimeout)
-                if args.cmdTimeout:
-                    logger.info("[PARAM SET] - COMMAND TIMEOUT IS %s SECONDS" % cmdTimeout)
                 logger.info("[PARAM SET] - THREADS IS %s" % workers)
                 if args.sudo:
                     logger.info("[PARAM SET] - SUDO ACTIVATED")
@@ -426,7 +442,7 @@ if __name__ == "__main__":
                 q = Queue.Queue()
 
                 for host_chunk in chunks:
-                    ssh_to_host(host_chunk, sitePasswd, connectTimeout)
+                    ssh_to_host(host_chunk, sitePasswd, connectTimeout, cmdTimeout)
 
                 ## end timer ##
                 etime = time.time()

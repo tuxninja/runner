@@ -108,7 +108,7 @@ def check_args_and_set_default(args):
     ## SET CMD TIMEOUT ##
     cmdTimeout = None
     if args.cmdTimeout:
-        cmdTimeout = float(args.cmdTimeout)
+        cmdTimeout = args.cmdTimeout
 
     ## SET THREADS / WORKERS ##
     workers = 10

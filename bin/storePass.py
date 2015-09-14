@@ -1,7 +1,7 @@
-#!/usr/local/bin/python2.7
+#!/usr/bin/env python2.7
 __author__ = 'jriedel'
 __description__ = 'Command line utility for storing encrypted password for use with runner.'
-__version__ = '1.0'
+__version__ = '1.1'
 
 from Crypto.Cipher import AES
 from Crypto import Random
@@ -33,6 +33,12 @@ def store_data(cipherText):
     logging.info("Your password has been encrypted & stored for use with Runner.")
 
 def create_key_file(kfPath):
+
+    # if the directory does not exist, create it.
+    kfPathDir = os.path.dirname(os.path.abspath(kfPath))
+    if not os.path.exists(kfPathDir):
+        os.makedirs(kfPathDir)
+
     print "A key file was not found, you must create one."
     key = getpass.getpass("Enter Key(16,24, or 32 characters): ")
     kf = open(kfPath, 'w')
